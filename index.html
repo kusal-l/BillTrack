@@ -1,0 +1,2237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BillTrack — Bill Management System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d0f1a;
+      --surface: #161929;
+      --surface2: #1e2236;
+      --border: #2a2f4a;
+      --accent: #6c63ff;
+      --accent2: #a78bfa;
+      --accent-glow: rgba(108,99,255,0.18);
+      --green: #22c55e;
+      --green-bg: rgba(34,197,94,0.12);
+      --yellow: #f59e0b;
+      --yellow-bg: rgba(245,158,11,0.12);
+      --red: #ef4444;
+      --red-bg: rgba(239,68,68,0.12);
+      --text: #e2e8f0;
+      --text-muted: #7c86a0;
+      --text-dim: #4a5270;
+      --radius: 14px;
+      --radius-sm: 8px;
+      --shadow: 0 4px 32px rgba(0,0,0,0.5);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      position: fixed; top: 0; left: 0;
+      width: 240px; height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      z-index: 100;
+      transition: transform 0.3s ease;
+    }
+    .sidebar-logo {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo h1 {
+      font-size: 22px; font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .sidebar-logo p { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .nav-section {
+      padding: 12px 12px 4px;
+      font-size: 10px; font-weight: 600;
+      color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; margin: 2px 8px;
+      border-radius: var(--radius-sm); cursor: pointer;
+      font-size: 14px; font-weight: 500; color: var(--text-muted);
+      transition: all 0.2s;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: var(--accent-glow); color: var(--accent2); }
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+
+    /* Main */
+    .main { margin-left: 240px; min-height: 100vh; padding: 28px 32px; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* Page Header */
+    .page-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 28px; flex-wrap: wrap; gap: 12px;
+    }
+    .page-header h2 { font-size: 24px; font-weight: 700; }
+    .page-header p { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+    /* Stat Cards */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      position: relative; overflow: hidden; transition: transform 0.2s;
+    }
+    .stat-card:hover { transform: translateY(-2px); }
+    .stat-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    }
+    .stat-card.purple::before { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+    .stat-card.green::before  { background: linear-gradient(90deg, #22c55e, #4ade80); }
+    .stat-card.yellow::before { background: linear-gradient(90deg, #f59e0b, #fcd34d); }
+    .stat-card.red::before    { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .stat-label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+    .stat-value { font-size: 26px; font-weight: 800; margin-top: 6px; }
+    .stat-value.purple { color: var(--accent2); }
+    .stat-value.green  { color: var(--green); }
+    .stat-value.yellow { color: var(--yellow); }
+    .stat-value.red    { color: var(--red); }
+    .stat-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex; align-items: center; gap: 12px;
+      flex-wrap: wrap; margin-bottom: 20px;
+    }
+    .search-box {
+      flex: 1; min-width: 200px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 9px 14px;
+      color: var(--text); font-size: 14px; font-family: inherit;
+      outline: none; transition: border-color 0.2s;
+    }
+    .search-box:focus { border-color: var(--accent); }
+    .search-box::placeholder { color: var(--text-dim); }
+
+    select.filter-select {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 9px 14px;
+      color: var(--text); font-size: 14px; font-family: inherit;
+      outline: none; cursor: pointer; transition: border-color 0.2s;
+    }
+    select.filter-select:focus { border-color: var(--accent); }
+
+    /* Buttons */
+    .btn {
+      padding: 9px 18px; border-radius: var(--radius-sm);
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      border: none; font-family: inherit; transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      color: #fff; box-shadow: 0 0 20px rgba(108,99,255,0.35);
+    }
+    .btn-primary:hover { box-shadow: 0 0 28px rgba(108,99,255,0.55); transform: translateY(-1px); }
+    .btn-ghost {
+      background: var(--surface2); color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { color: var(--text); border-color: var(--accent); }
+    .btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+    .btn-danger:hover { background: rgba(239,68,68,0.25); }
+    .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+    /* Table */
+    .table-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: var(--surface2); }
+    th {
+      padding: 12px 16px; text-align: left;
+      font-size: 11px; font-weight: 600;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px;
+    }
+    td { padding: 13px 16px; font-size: 13px; border-top: 1px solid var(--border); }
+    tr:hover td { background: rgba(108,99,255,0.04); }
+
+    /* Badges */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 600;
+    }
+    .badge-paid    { background: var(--green-bg); color: var(--green); }
+    .badge-partial { background: var(--yellow-bg); color: var(--yellow); }
+    .badge-unpaid  { background: var(--red-bg); color: var(--red); }
+    .badge-cash    { background: rgba(99,179,237,0.15); color: #63b3ed; }
+    .badge-cheque  { background: rgba(167,139,250,0.15); color: var(--accent2); }
+
+    /* Drive Link */
+    .drive-link {
+      color: var(--accent2); text-decoration: none;
+      font-size: 12px; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .drive-link:hover { text-decoration: underline; }
+
+    /* Empty State */
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+    .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+    .empty-state span { font-size: 13px; color: var(--text-dim); }
+
+    /* Modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+      z-index: 200; align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); width: 560px; max-width: 96vw;
+      max-height: 90vh; overflow-y: auto; padding: 28px;
+      box-shadow: var(--shadow); animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 24px;
+    }
+    .modal-header h3 { font-size: 18px; font-weight: 700; }
+    .modal-close {
+      background: none; border: none; color: var(--text-muted);
+      font-size: 20px; cursor: pointer; padding: 4px; transition: color 0.2s;
+    }
+    .modal-close:hover { color: var(--text); }
+
+    /* Form */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+    input, select, textarea {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 10px 13px;
+      color: var(--text); font-size: 14px; font-family: inherit;
+      outline: none; transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 70px; }
+    .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 28px; right: 28px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 20px;
+      font-size: 14px; font-weight: 500; box-shadow: var(--shadow); z-index: 999;
+      opacity: 0; transform: translateY(10px); transition: all 0.3s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { border-left: 3px solid var(--green); }
+    .toast.error   { border-left: 3px solid var(--red); }
+
+    /* Hamburger */
+    .hamburger {
+      display: none; position: fixed; top: 16px; left: 16px;
+      z-index: 300; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 8px 10px; cursor: pointer; font-size: 18px;
+    }
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6); z-index: 99;
+    }
+
+    /* Settings */
+    .chip-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .chip {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 5px 12px;
+      font-size: 12px; display: flex; align-items: center; gap: 6px;
+    }
+    .chip-remove {
+      cursor: pointer; color: var(--text-dim); font-size: 14px; transition: color 0.2s;
+    }
+    .chip-remove:hover { color: var(--red); }
+    .settings-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px; margin-bottom: 20px;
+    }
+    .settings-card h4 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+    .add-row { display: flex; gap: 10px; }
+    .add-row input { flex: 1; }
+
+    /* Auth Screen & Setup Screen styling */
+    .auth-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+      background: var(--bg);
+    }
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .auth-card h2 {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .auth-card p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    /* Cheque Calendar CSS */
+    .calendar-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-top: 28px;
+    }
+    .calendar-header-row {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .calendar-header-cell {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      padding: 8px 0;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+    .calendar-day-cell {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      min-height: 90px;
+      padding: 6px;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+      transition: all 0.2s;
+      cursor: default;
+      overflow: hidden;
+    }
+    .calendar-day-cell:hover {
+      border-color: var(--accent);
+    }
+    .calendar-day-cell.today {
+      border: 2px solid var(--accent);
+    }
+    .calendar-day-cell.empty {
+      background: transparent;
+      border: none;
+      min-height: auto;
+    }
+    .calendar-day-num {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .calendar-day-cell.today .calendar-day-num {
+      color: var(--accent2);
+    }
+    .calendar-cheque-item {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 3px 5px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      line-height: 1.2;
+      transition: transform 0.1s;
+    }
+    .calendar-cheque-item:hover {
+      transform: scale(1.02);
+    }
+    .calendar-cheque-item.cashed {
+      background: var(--green-bg);
+      color: var(--green);
+      border-left: 3px solid var(--green);
+    }
+    .calendar-cheque-item.pending {
+      background: var(--yellow-bg);
+      color: var(--yellow);
+      border-left: 3px solid var(--yellow);
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay.open { display: block; }
+      .main { margin-left: 0; padding: 20px 16px; padding-top: 64px; }
+      .hamburger { display: block; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-group.full { grid-column: 1; }
+    }
+    @media (max-width: 500px) {
+      .stats-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- AUTH / SETUP VIEW -->
+<div id="auth-view" class="auth-container" style="display: none;">
+  <div class="auth-card">
+    <h2>BillTrack</h2>
+    
+    <!-- Sign In Form -->
+    <div id="login-form-area" style="display: none;">
+      <p>Sign in to access your bill management system</p>
+      <form onsubmit="handleLogin(event)" style="display: flex; flex-direction: column; gap: 16px; text-align: left;">
+        <div class="form-group">
+          <label for="l-username">Username</label>
+          <input type="text" id="l-username" placeholder="Enter username" required />
+        </div>
+        <div class="form-group">
+          <label for="l-password">Password</label>
+          <input type="password" id="l-password" placeholder="Enter password" required />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">Sign In</button>
+      </form>
+    </div>
+
+    <!-- First Launch Setup Form -->
+    <div id="setup-form-area" style="display: none;">
+      <p style="color: var(--yellow); font-weight: 600;">⚠️ First Launch Setup</p>
+      <p>Create your administrator credentials to get started.</p>
+      <form onsubmit="handleSetup(event)" style="display: flex; flex-direction: column; gap: 16px; text-align: left;">
+        <div class="form-group">
+          <label for="s-username">Choose Username</label>
+          <input type="text" id="s-username" placeholder="e.g. admin" required />
+        </div>
+        <div class="form-group">
+          <label for="s-password">Choose Password</label>
+          <input type="password" id="s-password" placeholder="Min 6 characters" required />
+        </div>
+        <div class="form-group">
+          <label for="s-confirm-password">Confirm Password</label>
+          <input type="password" id="s-confirm-password" placeholder="Confirm password" required />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">Create Admin & Sign In</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APPLICATION VIEW -->
+<div id="app-view" style="display: none;">
+  <button class="hamburger" onclick="toggleSidebar()">☰</button>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <h1>BillTrack</h1>
+      <p>Bill Management System</p>
+    </div>
+    <div style="padding:12px 0; flex:1; overflow-y:auto;">
+      <div class="nav-section">Overview</div>
+      <div class="nav-item active" id="nav-dashboard" onclick="navigate('dashboard')">
+        <span class="icon">📊</span> Dashboard
+      </div>
+      <div class="nav-section">Bills</div>
+      <div class="nav-item" id="nav-sales" onclick="navigate('sales')">
+        <span class="icon">📤</span> Sales Bills
+      </div>
+      <div class="nav-item" id="nav-purchase" onclick="navigate('purchase')">
+        <span class="icon">📥</span> Purchase Bills
+      </div>
+      <div class="nav-section">System</div>
+      <div class="nav-item" id="nav-settings" onclick="navigate('settings')">
+        <span class="icon">⚙️</span> Settings
+      </div>
+    </div>
+    <div style="padding:16px 20px; border-top:1px solid var(--border); display: flex; flex-direction: column; gap: 12px;">
+      <div id="user-profile" style="display: flex; flex-direction: column; gap: 2px;">
+        <div id="user-profile-name" style="font-size: 13px; font-weight: 600; color: var(--text);">User</div>
+        <div id="user-profile-email" style="font-size: 11px; color: var(--text-muted); word-break: break-all;">Administrator</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="logout()" style="width: 100%; justify-content: center; gap: 6px;">
+        🚪 Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <h2>Dashboard</h2>
+          <p id="dashDate"></p>
+        </div>
+        <button class="btn btn-ghost" onclick="exportCSV('sales')">⬇ Export Sales CSV</button>
+      </div>
+      
+      <div class="stats-grid">
+        <div class="stat-card purple">
+          <div class="stat-label">Total Outstanding</div>
+          <div class="stat-value purple" id="stat-outstanding">LKR 0.00</div>
+          <div class="stat-sub">Amount yet to be collected</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Fully Paid Bills</div>
+          <div class="stat-value green" id="stat-paid">0</div>
+          <div class="stat-sub">Sales bills fully settled</div>
+        </div>
+        <div class="stat-card yellow">
+          <div class="stat-label">Partially Paid</div>
+          <div class="stat-value yellow" id="stat-partial">0</div>
+          <div class="stat-sub">Bills with balance due</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Unpaid Bills</div>
+          <div class="stat-value red" id="stat-unpaid">0</div>
+          <div class="stat-sub">No payment received yet</div>
+        </div>
+      </div>
+
+      <!-- CHEQUE CALENDAR WIDGET -->
+      <div class="calendar-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h4 style="font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+            <span>📅</span> Cheque Deposit Calendar
+          </h4>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="btn btn-ghost btn-sm" onclick="prevCalendarMonth()" style="padding: 2px 8px;">◀</button>
+            <strong id="calendar-month-year" style="font-size: 14px; min-width: 140px; text-align: center;">Month Year</strong>
+            <button class="btn btn-ghost btn-sm" onclick="nextCalendarMonth()" style="padding: 2px 8px;">▶</button>
+          </div>
+        </div>
+        <div class="calendar-header-row">
+          <div class="calendar-header-cell">Sun</div>
+          <div class="calendar-header-cell">Mon</div>
+          <div class="calendar-header-cell">Tue</div>
+          <div class="calendar-header-cell">Wed</div>
+          <div class="calendar-header-cell">Thu</div>
+          <div class="calendar-header-cell">Fri</div>
+          <div class="calendar-header-cell">Sat</div>
+        </div>
+        <div id="cheque-calendar-grid" class="calendar-grid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div style="margin-top:28px; margin-bottom:14px; font-size:13px; font-weight:600; color:var(--text-muted);">
+        Recent Sales Bills
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Bill No.</th><th>Shop</th><th>Area</th><th>Date</th>
+              <th>Total</th><th>Status</th><th>Outstanding</th>
+            </tr>
+          </thead>
+          <tbody id="dash-recent"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SALES BILLS -->
+    <div class="page" id="page-sales">
+      <div class="page-header">
+        <div>
+          <h2>Sales Bills</h2>
+          <p>Bills issued to retail shops</p>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-ghost" onclick="exportCSV('sales')">⬇ Export CSV</button>
+          <button class="btn btn-primary" onclick="openSalesModal()">＋ Add Bill</button>
+        </div>
+      </div>
+      <div class="toolbar">
+        <input class="search-box" type="text" placeholder="🔍 Search shop name or bill no..." id="sales-search" oninput="renderSales()" />
+        <select class="filter-select" id="f-sales-area" onchange="renderSales()">
+          <option value="">All Areas</option>
+        </select>
+        <select class="filter-select" id="f-sales-status" onchange="renderSales()">
+          <option value="">All Statuses</option>
+          <option value="Unpaid">Unpaid</option>
+          <option value="Partially Paid">Partially Paid</option>
+          <option value="Fully Paid">Fully Paid</option>
+        </select>
+        <select class="filter-select" id="f-sales-mode" onchange="renderSales()">
+          <option value="">All Payment Modes</option>
+          <option value="Cash">Cash</option>
+          <option value="Cheque">Cheque</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Bill No.</th><th>Shop</th><th>Area</th><th>Date</th>
+              <th>Total (LKR)</th><th>Paid (LKR)</th><th>Outstanding</th>
+              <th>Payment Modes & Cheques</th><th>Status</th><th>Bill PDF</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="sales-tbody"></tbody>
+        </table>
+        <div id="sales-empty" class="empty-state" style="display:none;">
+          <div class="empty-icon">📄</div>
+          <p>No sales bills found</p>
+          <span>Add your first bill or adjust your filters</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PURCHASE BILLS -->
+    <div class="page" id="page-purchase">
+      <div class="page-header">
+        <div>
+          <h2>Purchase Bills</h2>
+          <p>Bills received from your factories</p>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-ghost" onclick="exportCSV('purchase')">⬇ Export CSV</button>
+          <button class="btn btn-primary" onclick="openPurchaseModal()">＋ Add Bill</button>
+        </div>
+      </div>
+      <div class="toolbar">
+        <input class="search-box" type="text" placeholder="🔍 Search bill no or factory..." id="purchase-search" oninput="renderPurchase()" />
+        <select class="filter-select" id="f-purchase-factory" onchange="renderPurchase()">
+          <option value="">All Factories</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Bill No.</th><th>Factory</th><th>Date</th>
+              <th>Amount (LKR)</th><th>Bill PDF</th><th>Notes</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="purchase-tbody"></tbody>
+        </table>
+        <div id="purchase-empty" class="empty-state" style="display:none;">
+          <div class="empty-icon">🏭</div>
+          <p>No purchase bills found</p>
+          <span>Add your first purchase bill or adjust filters</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <div><h2>Settings</h2><p>Manage areas, factories and backup your data</p></div>
+      </div>
+
+      <div class="settings-card">
+        <h4>📍 Manage Areas</h4>
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">
+          These appear in the area dropdown when adding sales bills.
+        </p>
+        <div class="add-row">
+          <input type="text" id="newAreaInput" placeholder="Type area name and press Enter..."
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();addArea();}" />
+          <button class="btn btn-primary" onclick="addArea()">Add Area</button>
+        </div>
+        <div class="chip-list" id="area-chips"></div>
+      </div>
+
+      <div class="settings-card">
+        <h4>🏭 Manage Factories</h4>
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">
+          These appear in the factory dropdown when adding purchase bills.
+        </p>
+        <div class="add-row">
+          <input type="text" id="newFactoryInput" placeholder="Type factory name and press Enter..."
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();addFactory();}" />
+          <button class="btn btn-primary" onclick="addFactory()">Add Factory</button>
+        </div>
+        <div class="chip-list" id="factory-chips"></div>
+      </div>
+
+      <div class="settings-card">
+        <h4>🔒 Security &amp; Password</h4>
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">
+          Update your administrator login password.
+        </p>
+        <form id="change-pwd-form" onsubmit="handleChangePassword(event)">
+          <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: flex-end;">
+            <div class="form-group">
+              <label for="cp-current">Current Password</label>
+              <input type="password" id="cp-current" placeholder="Current password" required />
+            </div>
+            <div class="form-group">
+              <label for="cp-new">New Password</label>
+              <input type="password" id="cp-new" placeholder="Min 6 characters" required />
+            </div>
+            <div class="form-group">
+              <label for="cp-confirm">Confirm New Password</label>
+              <input type="password" id="cp-confirm" placeholder="Confirm new password" required />
+            </div>
+          </div>
+          <div style="margin-top: 14px; display: flex; justify-content: flex-end;">
+            <button type="submit" class="btn btn-primary">Update Password</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="settings-card">
+        <h4>💾 Data Backup &amp; Restore</h4>
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">
+          Export database regularly to keep a safe backup.
+        </p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-ghost" onclick="exportCSV('sales')">⬇ Export Sales CSV</button>
+          <button class="btn btn-ghost" onclick="exportCSV('purchase')">⬇ Export Purchase CSV</button>
+          <button class="btn btn-ghost" onclick="exportAllJSON()">⬇ Full Backup (.json)</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('importFile').click()">⬆ Restore Backup</button>
+          <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)" />
+        </div>
+        <div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border);">
+          <p style="font-size:13px; color:var(--red); font-weight:600; margin-bottom:10px;">⚠️ Danger Zone</p>
+          <button class="btn btn-danger" onclick="clearAllData()">🗑 Clear Local Database</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- SALES MODAL -->
+<div class="modal-overlay" id="modal-sales">
+  <div class="modal" style="width: 700px; max-width: 95vw;">
+    <div class="modal-header">
+      <h3 id="sales-modal-title">Add Sales Bill</h3>
+      <button class="modal-close" onclick="closeSalesModal()">✕</button>
+    </div>
+    <form id="sales-form" onsubmit="saveSalesBill(event)">
+      <input type="hidden" id="s-id" />
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="s-billno">Bill Number *</label>
+          <input type="text" id="s-billno" placeholder="e.g. SB-001" required />
+        </div>
+        <div class="form-group">
+          <label for="s-date">Bill Date *</label>
+          <input type="date" id="s-date" required />
+        </div>
+        <div class="form-group">
+          <label for="s-shop">Shop Name *</label>
+          <input type="text" id="s-shop" placeholder="Retail shop name" required />
+        </div>
+        <div class="form-group">
+          <label for="s-area">Area *</label>
+          <select id="s-area" required>
+            <option value="">Select area...</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label for="s-total">Total Amount (LKR) *</label>
+          <input type="number" id="s-total" placeholder="0.00" min="0" step="0.01" required oninput="calcSalesModalTotals()" />
+        </div>
+        
+        <!-- PDF UPLOADER -->
+        <div class="form-group full" style="border-top: 1px solid var(--border); padding-top: 12px;">
+          <label for="s-photo-file">Upload Bill PDF (Max 3MB)</label>
+          <div style="display: flex; gap: 10px; align-items: center; margin-top: 4px;">
+            <input type="file" id="s-photo-file" accept="application/pdf" onchange="uploadBillPdf('sales')" style="flex: 1; padding: 6px 10px;" />
+            <input type="hidden" id="s-photo" />
+            <span id="s-upload-status" style="font-size: 12px; color: var(--text-muted);">No file selected</span>
+          </div>
+          <div id="s-pdf-preview-container" style="display: none; margin-top: 8px;">
+            <a id="s-pdf-preview-link" href="javascript:void(0)" class="drive-link" style="font-size: 13px; font-weight: 600;">📄 View Uploaded PDF</a>
+          </div>
+        </div>
+
+        <!-- PAYMENT PLAN SCHEDULE -->
+        <div class="form-group full" style="margin-top: 10px; border-top: 1px solid var(--border); padding-top: 15px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <label style="font-size: 13px; font-weight: 700; color: var(--accent2);">💳 Payment Schedule & records</label>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="addPaymentRow()" style="padding: 4px 10px;">＋ Add Payment Row</button>
+          </div>
+          <div class="table-wrap" style="max-height: 220px; overflow-y: auto;">
+            <table style="font-size: 12px;">
+              <thead>
+                <tr style="background: var(--surface2);">
+                  <th>Date</th>
+                  <th>Amount (LKR)</th>
+                  <th>Mode</th>
+                  <th>Cheque No &amp; Deposit Date</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="s-payments-tbody">
+                <!-- Appended dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="form-group full">
+          <div style="background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; color:var(--text-muted);">Outstanding Balance</span>
+            <strong id="outstanding-display" style="color:var(--accent2); font-size:16px;">LKR 0.00</strong>
+          </div>
+        </div>
+
+        <div class="form-group full">
+          <label for="s-notes">Notes</label>
+          <textarea id="s-notes" placeholder="Optional remarks..."></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeSalesModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Bill</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- PURCHASE MODAL -->
+<div class="modal-overlay" id="modal-purchase">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="purchase-modal-title">Add Purchase Bill</h3>
+      <button class="modal-close" onclick="closePurchaseModal()">✕</button>
+    </div>
+    <form id="purchase-form" onsubmit="savePurchaseBill(event)">
+      <input type="hidden" id="p-id" />
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="p-billno">Bill Number *</label>
+          <input type="text" id="p-billno" placeholder="e.g. PB-001" required />
+        </div>
+        <div class="form-group">
+          <label for="p-date">Bill Date *</label>
+          <input type="date" id="p-date" required />
+        </div>
+        <div class="form-group">
+          <label for="p-factory">Factory *</label>
+          <select id="p-factory" required>
+            <option value="">Select factory...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="p-amount">Amount (LKR) *</label>
+          <input type="number" id="p-amount" placeholder="0.00" min="0" step="0.01" required />
+        </div>
+        
+        <!-- PDF UPLOADER -->
+        <div class="form-group full" style="border-top: 1px solid var(--border); padding-top: 12px;">
+          <label for="p-photo-file">Upload Bill PDF (Max 3MB)</label>
+          <div style="display: flex; gap: 10px; align-items: center; margin-top: 4px;">
+            <input type="file" id="p-photo-file" accept="application/pdf" onchange="uploadBillPdf('purchase')" style="flex: 1; padding: 6px 10px;" />
+            <input type="hidden" id="p-photo" />
+            <span id="p-upload-status" style="font-size: 12px; color: var(--text-muted);">No file selected</span>
+          </div>
+          <div id="p-pdf-preview-container" style="display: none; margin-top: 8px;">
+            <a id="p-pdf-preview-link" href="javascript:void(0)" class="drive-link" style="font-size: 13px; font-weight: 600;">📄 View Uploaded PDF</a>
+          </div>
+        </div>
+
+        <div class="form-group full">
+          <label for="p-notes">Notes</label>
+          <textarea id="p-notes" placeholder="Optional remarks..."></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" onclick="closePurchaseModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Bill</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- PDF PREVIEW MODAL -->
+<div class="modal-overlay" id="modal-pdf-viewer">
+  <div class="modal" style="width: 800px; max-width: 95vw; height: 85vh; padding: 20px; display: flex; flex-direction: column;">
+    <div class="modal-header" style="margin-bottom: 12px;">
+      <h3 id="pdf-viewer-title">Bill PDF Viewer</h3>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <a id="pdf-viewer-open-tab" href="#" target="_blank" class="btn btn-ghost btn-sm">Open in New Tab ↗</a>
+        <button class="modal-close" onclick="closePdfViewerModal()">✕</button>
+      </div>
+    </div>
+    <div style="flex: 1; width: 100%; background: #1e2236; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden;">
+      <iframe id="pdf-viewer-iframe" src="" style="width: 100%; height: 100%; border: none;"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- CHEQUE DETAILS MODAL (CALENDAR CLICK) -->
+<div class="modal-overlay" id="modal-cheque-detail">
+  <div class="modal" style="max-width: 400px; padding: 24px;">
+    <div class="modal-header">
+      <h3 style="font-size: 16px;">Cheque Deposit Details</h3>
+      <button class="modal-close" onclick="closeChequeDetailModal()">✕</button>
+    </div>
+    <div style="font-size: 13px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; text-align: left;">
+      <div><strong>Shop Name:</strong> <span id="cd-shop" style="color: var(--text);"></span></div>
+      <div><strong>Bill Number:</strong> <span id="cd-billno" style="color: var(--text);"></span></div>
+      <div><strong>Cheque Number:</strong> <span id="cd-cheque" style="color: var(--text);"></span></div>
+      <div><strong>Amount:</strong> <span id="cd-amount" style="color: var(--accent2); font-weight: 700;"></span></div>
+      <div>
+        <strong>Deposit Status:</strong> 
+        <span id="cd-status" class="badge"></span>
+      </div>
+    </div>
+    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+      <button id="cd-action-btn" class="btn btn-primary" onclick="toggleCalendarChequeStatus()">Mark as Cashed</button>
+      <button class="btn btn-ghost" onclick="closeChequeDetailModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Session variables ──
+  let token = localStorage.getItem('bt_session_token') || '';
+  let currentUsername = localStorage.getItem('bt_username') || '';
+
+  // ── Database State arrays ──
+  let salesBills    = [];
+  let purchaseBills = [];
+  let areas         = [];
+  let factories     = [];
+  
+  // Local payment records state in Modal
+  let currentBillPayments = [];
+  let calendarDate = new Date();
+  let activeCalendarCheque = null;
+
+  // ── Utils ──
+  const fmt  = n  => 'LKR ' + Number(n || 0).toLocaleString('en-LK', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const fmtD = d  => d ? new Date(d.substring(0,10) + 'T00:00:00').toLocaleDateString('en-GB') : '—';
+
+  function statusBadge(s) {
+    if (s === 'Fully Paid')    return '<span class="badge badge-paid">✔ Paid</span>';
+    if (s === 'Partially Paid') return '<span class="badge badge-partial">◑ Partial</span>';
+    return '<span class="badge badge-unpaid">✖ Unpaid</span>';
+  }
+
+  // ── API request helper wrapper ──
+  async function apiRequest(path, options = {}) {
+    options.headers = options.headers || {};
+    if (token) {
+      options.headers['Authorization'] = 'Bearer ' + token;
+    }
+    
+    try {
+      const response = await fetch(path, options);
+      if (response.status === 401) {
+        logout();
+        throw new Error("Session expired. Please log in again.");
+      }
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (err) {
+      console.error(`API Error on ${path}:`, err);
+      throw err;
+    }
+  }
+
+  // ── Navigation ──
+  function navigate(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    document.getElementById('nav-'  + page).classList.add('active');
+    if (page === 'dashboard') { renderDashboard(); renderCalendar(); }
+    if (page === 'sales')     { refreshAreaDropdown(); renderSales(); }
+    if (page === 'purchase')  { refreshFactoryDropdown(); renderPurchase(); }
+    if (page === 'settings')  renderSettings();
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('open');
+  }
+
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarOverlay').classList.toggle('open');
+  }
+
+  // ── Dashboard ──
+  function renderDashboard() {
+    document.getElementById('dashDate').textContent =
+      new Date().toLocaleDateString('en-GB', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+    let outstanding = 0, paid = 0, partial = 0, unpaid = 0;
+    salesBills.forEach(b => {
+      outstanding += Math.max(0, (b.total||0) - (b.paid||0));
+      if (b.status === 'Fully Paid')    paid++;
+      else if (b.status === 'Partially Paid') partial++;
+      else unpaid++;
+    });
+
+    document.getElementById('stat-outstanding').textContent = fmt(outstanding);
+    document.getElementById('stat-paid').textContent    = paid;
+    document.getElementById('stat-partial').textContent  = partial;
+    document.getElementById('stat-unpaid').textContent   = unpaid;
+
+    const recent = [...salesBills].sort((a,b) => b.date.localeCompare(a.date)).slice(0, 10);
+    const tbody  = document.getElementById('dash-recent');
+    if (!recent.length) {
+      tbody.innerHTML = `<tr><td colspan="7">
+        <div class="empty-state">
+          <div class="empty-icon">📊</div>
+          <p>No bills yet</p>
+          <span>Add a sales bill to see it here</span>
+        </div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = recent.map(b => {
+      const out = Math.max(0, (b.total||0) - (b.paid||0));
+      return `<tr>
+        <td style="font-weight:600;">${escapeHtml(b.billno)}</td>
+        <td>${escapeHtml(b.shop)}</td>
+        <td><span style="font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;">${escapeHtml(b.area)}</span></td>
+        <td>${fmtD(b.date)}</td>
+        <td style="font-weight:600;">${fmt(b.total)}</td>
+        <td>${statusBadge(b.status)}</td>
+        <td style="color:${out > 0 ? 'var(--red)' : 'var(--green)'};font-weight:600;">${fmt(out)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Cheque Calendar Rendering ──
+  function prevCalendarMonth() {
+    calendarDate.setMonth(calendarDate.getMonth() - 1);
+    renderCalendar();
+  }
+
+  function nextCalendarMonth() {
+    calendarDate.setMonth(calendarDate.getMonth() + 1);
+    renderCalendar();
+  }
+
+  function renderCalendar() {
+    const grid = document.getElementById('cheque-calendar-grid');
+    const title = document.getElementById('calendar-month-year');
+    if (!grid || !title) return;
+    
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    title.textContent = `${monthNames[calendarDate.getMonth()]} ${calendarDate.getFullYear()}`;
+    
+    grid.innerHTML = '';
+    
+    const headers = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    headers.forEach(h => {
+      const el = document.createElement('div');
+      el.className = 'calendar-header-cell';
+      el.textContent = h;
+      grid.appendChild(el);
+    });
+    
+    const year = calendarDate.getFullYear();
+    const month = calendarDate.getMonth();
+    
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    for (let i = 0; i < firstDay; i++) {
+      const el = document.createElement('div');
+      el.className = 'calendar-day-cell empty';
+      grid.appendChild(el);
+    }
+    
+    const chequesMap = {};
+    salesBills.forEach(b => {
+      const paymentsList = getPayments(b);
+      paymentsList.forEach((p, pIdx) => {
+        if (p.mode === 'Cheque' && p.depositDate) {
+          const depDate = new Date(p.depositDate);
+          if (depDate.getFullYear() === year && depDate.getMonth() === month) {
+            const dayNum = depDate.getDate();
+            chequesMap[dayNum] = chequesMap[dayNum] || [];
+            chequesMap[dayNum].push({
+              billId: b.id,
+              billno: b.billno,
+              shop: b.shop,
+              cheque: p.cheque,
+              amount: p.amount,
+              status: p.status,
+              paymentIdx: pIdx
+            });
+          }
+        }
+      });
+    });
+    
+    const today = new Date();
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayEl = document.createElement('div');
+      const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
+      dayEl.className = `calendar-day-cell ${isToday ? 'today' : ''}`;
+      
+      const numEl = document.createElement('div');
+      numEl.className = 'calendar-day-num';
+      numEl.textContent = day;
+      dayEl.appendChild(numEl);
+      
+      const dayCheques = chequesMap[day] || [];
+      dayCheques.forEach(ch => {
+        const itemEl = document.createElement('div');
+        const isCashed = ch.status === 'Cashed';
+        itemEl.className = `calendar-cheque-item ${isCashed ? 'cashed' : 'pending'}`;
+        itemEl.innerHTML = `
+          <span>${escapeHtml(ch.shop)}</span>
+          <span style="font-weight:800;">${escapeHtml(ch.cheque)} (${isCashed ? 'Cashed' : 'Pending'})</span>
+          <span style="opacity:0.8;">${fmt(ch.amount)}</span>
+        `;
+        itemEl.onclick = (e) => {
+          e.stopPropagation();
+          showChequeDetailsModal(ch);
+        };
+        dayEl.appendChild(itemEl);
+      });
+      
+      grid.appendChild(dayEl);
+    }
+  }
+
+  // ── Cheque Details Calendar Modal Actions ──
+  function showChequeDetailsModal(ch) {
+    activeCalendarCheque = ch;
+    document.getElementById('cd-shop').textContent = ch.shop;
+    document.getElementById('cd-billno').textContent = ch.billno;
+    document.getElementById('cd-cheque').textContent = ch.cheque;
+    document.getElementById('cd-amount').textContent = fmt(ch.amount);
+    
+    const statusEl = document.getElementById('cd-status');
+    const actionBtn = document.getElementById('cd-action-btn');
+    
+    if (ch.status === 'Cashed') {
+      statusEl.textContent = '✔ Cashed';
+      statusEl.className = 'badge badge-paid';
+      actionBtn.textContent = 'Mark as To be Collected';
+      actionBtn.className = 'btn btn-ghost btn-sm';
+    } else {
+      statusEl.textContent = '◑ To be Collected';
+      statusEl.className = 'badge badge-partial';
+      actionBtn.textContent = 'Mark as Cashed';
+      actionBtn.className = 'btn btn-primary btn-sm';
+    }
+    
+    document.getElementById('modal-cheque-detail').classList.add('open');
+  }
+
+  function closeChequeDetailModal() {
+    document.getElementById('modal-cheque-detail').classList.remove('open');
+    activeCalendarCheque = null;
+  }
+
+  async function toggleCalendarChequeStatus() {
+    if (!activeCalendarCheque) return;
+    const ch = activeCalendarCheque;
+    
+    const b = salesBills.find(x => x.id === ch.billId);
+    if (!b) return;
+    
+    const paymentsList = getPayments(b);
+    const currentStatus = paymentsList[ch.paymentIdx].status;
+    const nextStatus = currentStatus === 'Cashed' ? 'To be Collected' : 'Cashed';
+    paymentsList[ch.paymentIdx].status = nextStatus;
+    
+    let cashedSum = 0;
+    paymentsList.forEach(p => {
+      if (p.status === 'Cashed') cashedSum += parseFloat(p.amount) || 0;
+    });
+    
+    let nextBillStatus = 'Unpaid';
+    if (cashedSum >= b.total) nextBillStatus = 'Fully Paid';
+    else if (cashedSum > 0) nextBillStatus = 'Partially Paid';
+    
+    const updatedBill = {
+      ...b,
+      paid: cashedSum,
+      status: nextBillStatus,
+      payments: paymentsList
+    };
+    
+    try {
+      await apiRequest('/api/sales', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedBill)
+      });
+      closeChequeDetailModal();
+      showToast('Cheque status updated ✓', 'success');
+      await syncData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  // ── PDF Viewer Modal Actions ──
+  function viewBillPdf(url, title = 'Bill PDF Viewer') {
+    document.getElementById('pdf-viewer-title').textContent = title;
+    document.getElementById('pdf-viewer-iframe').src = url;
+    document.getElementById('pdf-viewer-open-tab').href = url;
+    document.getElementById('modal-pdf-viewer').classList.add('open');
+  }
+
+  function closePdfViewerModal() {
+    document.getElementById('modal-pdf-viewer').classList.remove('open');
+    document.getElementById('pdf-viewer-iframe').src = '';
+  }
+
+  // ── PDF Upload JS API handler ──
+  async function uploadBillPdf(type) {
+    const prefix = type === 'sales' ? 's' : 'p';
+    const fileInput = document.getElementById(`${prefix}-photo-file`);
+    const statusEl = document.getElementById(`${prefix}-upload-status`);
+    const hiddenInput = document.getElementById(`${prefix}-photo`);
+    const previewContainer = document.getElementById(`${prefix}-pdf-preview-container`);
+    const previewLink = document.getElementById(`${prefix}-pdf-preview-link`);
+    
+    const file = fileInput.files[0];
+    if (!file) return;
+    
+    if (file.size > 3 * 1024 * 1024) {
+      showToast("File size exceeds 3MB limit.", "error");
+      fileInput.value = '';
+      return;
+    }
+    
+    statusEl.textContent = "Uploading...";
+    statusEl.style.color = "var(--yellow)";
+    
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    try {
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + token
+        },
+        body: formData
+      });
+      
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || "Upload failed");
+      }
+      
+      const res = await response.json();
+      hiddenInput.value = res.fileUrl;
+      statusEl.textContent = "Uploaded successfully ✓";
+      statusEl.style.color = "var(--green)";
+      
+      previewLink.onclick = () => viewBillPdf(res.fileUrl, `${type === 'sales' ? 'Sales' : 'Purchase'} PDF`);
+      previewContainer.style.display = "block";
+      showToast("PDF uploaded successfully!", "success");
+    } catch (err) {
+      console.error("Upload error:", err);
+      statusEl.textContent = "Upload failed ✕";
+      statusEl.style.color = "var(--red)";
+      showToast(err.message, "error");
+    }
+  }
+
+  // ── Sales ──
+  function renderSales() {
+    const search = document.getElementById('sales-search').value.toLowerCase();
+    const area   = document.getElementById('f-sales-area').value;
+    const status = document.getElementById('f-sales-status').value;
+    const mode   = document.getElementById('f-sales-mode').value;
+
+    const filtered = salesBills
+      .filter(b => {
+        const paymentsList = getPayments(b);
+        const modes = [...new Set(paymentsList.map(p => p.mode))];
+        const matchMode = !mode || modes.includes(mode);
+        return (!search || b.billno.toLowerCase().includes(search) || b.shop.toLowerCase().includes(search)) &&
+          (!area   || b.area   === area)   &&
+          (!status || b.status === status) &&
+          matchMode;
+      })
+      .sort((a, b) => b.date.localeCompare(a.date));
+
+    const tbody = document.getElementById('sales-tbody');
+    const empty = document.getElementById('sales-empty');
+
+    if (!filtered.length) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    tbody.innerHTML = filtered.map(b => {
+      const out = Math.max(0, (b.total||0) - (b.paid||0));
+      
+      const paymentsList = getPayments(b);
+      const modes = [...new Set(paymentsList.map(p => p.mode))];
+      const modeBadge = modes.map(m => m === 'Cash' ? '<span class="badge badge-cash">💵 Cash</span>' : '<span class="badge badge-cheque">🏦 Cheque</span>').join(' ') || '—';
+      
+      const cheques = paymentsList.filter(p => p.mode === 'Cheque').map(p => `${p.cheque} (${p.status})`);
+      const chequeNo = cheques.length > 0 ? `<br><span style="font-size:11px;color:var(--text-muted);">${escapeHtml(cheques.join(', '))}</span>` : '';
+      
+      const pdf = b.photo ? `<a href="javascript:void(0)" onclick="viewBillPdf('${escapeHtml(b.photo)}', 'Sales Bill ${escapeHtml(b.billno)} PDF')" class="drive-link">📄 View PDF</a>` : '—';
+      return `<tr>
+        <td style="font-weight:600;">${escapeHtml(b.billno)}</td>
+        <td>${escapeHtml(b.shop)}</td>
+        <td><span style="font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;">${escapeHtml(b.area)}</span></td>
+        <td>${fmtD(b.date)}</td>
+        <td style="font-weight:600;">${fmt(b.total)}</td>
+        <td style="color:var(--green);">${fmt(b.paid||0)}</td>
+        <td style="color:${out > 0 ? 'var(--red)' : 'var(--green)'};font-weight:600;">${fmt(out)}</td>
+        <td>${modeBadge}${chequeNo}</td>
+        <td>${statusBadge(b.status)}</td>
+        <td>${pdf}</td>
+        <td style="white-space:nowrap;">
+          <button class="btn btn-ghost btn-sm" onclick="editSales('${b.id}')">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteSales('${b.id}')">🗑️</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function openSalesModal(id) {
+    refreshAreaDropdown('s-area');
+    const previewContainer = document.getElementById('s-pdf-preview-container');
+    const previewLink = document.getElementById('s-pdf-preview-link');
+    const uploadStatus = document.getElementById('s-upload-status');
+    const fileInput = document.getElementById('s-photo-file');
+    
+    fileInput.value = '';
+    
+    if (id) {
+      const b = salesBills.find(x => x.id === id);
+      if (!b) return;
+      document.getElementById('sales-modal-title').textContent = 'Edit Sales Bill';
+      document.getElementById('s-id').value      = b.id;
+      document.getElementById('s-billno').value  = b.billno;
+      document.getElementById('s-date').value    = b.date.substring(0, 10);
+      document.getElementById('s-shop').value    = b.shop;
+      document.getElementById('s-area').value    = b.area;
+      document.getElementById('s-total').value   = b.total;
+      document.getElementById('s-photo').value   = b.photo || '';
+      document.getElementById('s-notes').value   = b.notes || '';
+      
+      currentBillPayments = getPayments(b);
+      
+      if (b.photo) {
+        uploadStatus.textContent = "Saved PDF loaded";
+        uploadStatus.style.color = "var(--green)";
+        previewLink.onclick = () => viewBillPdf(b.photo, `Sales Bill ${b.billno} PDF`);
+        previewContainer.style.display = "block";
+      } else {
+        uploadStatus.textContent = "No file selected";
+        uploadStatus.style.color = "var(--text-muted)";
+        previewContainer.style.display = "none";
+      }
+    } else {
+      document.getElementById('sales-modal-title').textContent = 'Add Sales Bill';
+      document.getElementById('sales-form').reset();
+      document.getElementById('s-id').value   = '';
+      document.getElementById('s-date').value = todayStr();
+      document.getElementById('s-photo').value = '';
+      
+      currentBillPayments = [];
+      
+      uploadStatus.textContent = "No file selected";
+      uploadStatus.style.color = "var(--text-muted)";
+      previewContainer.style.display = "none";
+    }
+    
+    renderModalPayments();
+    calcSalesModalTotals();
+    document.getElementById('modal-sales').classList.add('open');
+  }
+
+  function closeSalesModal() {
+    document.getElementById('modal-sales').classList.remove('open');
+    document.getElementById('sales-form').reset();
+    document.getElementById('s-id').value = '';
+  }
+
+  function editSales(id) { openSalesModal(id); }
+
+  async function deleteSales(id) {
+    if (!confirm('Delete this sales bill?')) return;
+    try {
+      await apiRequest('/api/sales/' + id, { method: 'DELETE' });
+      showToast('Bill deleted ✓', 'success');
+      await syncData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  async function saveSalesBill(e) {
+    e.preventDefault();
+    const total = parseFloat(document.getElementById('s-total').value) || 0;
+    
+    let cashedSum = 0;
+    currentBillPayments.forEach(p => {
+      if (p.status === 'Cashed') {
+        cashedSum += parseFloat(p.amount) || 0;
+      }
+    });
+
+    let overallStatus = 'Unpaid';
+    if (cashedSum >= total) overallStatus = 'Fully Paid';
+    else if (cashedSum > 0) overallStatus = 'Partially Paid';
+
+    const id = document.getElementById('s-id').value || '';
+    const bill = {
+      id,
+      billno:  document.getElementById('s-billno').value.trim(),
+      date:    document.getElementById('s-date').value,
+      shop:    document.getElementById('s-shop').value.trim(),
+      area:    document.getElementById('s-area').value,
+      total,
+      paid:    cashedSum,
+      status:  overallStatus,
+      photo:   document.getElementById('s-photo').value.trim(),
+      notes:   document.getElementById('s-notes').value.trim(),
+      payments: currentBillPayments
+    };
+
+    try {
+      await apiRequest('/api/sales', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bill)
+      });
+      closeSalesModal();
+      showToast('Sales bill saved ✓', 'success');
+      await syncData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  // ── Payment Grid Manager Inside Modal ──
+  function renderModalPayments() {
+    const tbody = document.getElementById('s-payments-tbody');
+    if (!tbody) return;
+    
+    if (currentBillPayments.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-dim); padding: 16px;">No payment records. Click "Add Payment Row" to plan or register a payment.</td></tr>`;
+      return;
+    }
+    
+    tbody.innerHTML = currentBillPayments.map((p, idx) => {
+      const isCheque = p.mode === 'Cheque';
+      return `
+        <tr>
+          <td>
+            <input type="date" value="${p.date}" onchange="updatePaymentField(${idx}, 'date', this.value)" style="padding: 6px; font-size: 12px; width: 125px;" required />
+          </td>
+          <td>
+            <input type="number" value="${p.amount}" min="0.01" step="0.01" onchange="updatePaymentField(${idx}, 'amount', parseFloat(this.value) || 0); calcSalesModalTotals();" style="padding: 6px; font-size: 12px; width: 95px;" required />
+          </td>
+          <td>
+            <select onchange="updatePaymentField(${idx}, 'mode', this.value); renderModalPayments(); calcSalesModalTotals();" style="padding: 6px; font-size: 12px; width: 90px;" required>
+              <option value="Cash" ${p.mode === 'Cash' ? 'selected' : ''}>Cash</option>
+              <option value="Cheque" ${p.mode === 'Cheque' ? 'selected' : ''}>Cheque</option>
+            </select>
+          </td>
+          <td>
+            ${isCheque ? `
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <input type="text" placeholder="Cheque No." value="${p.cheque || ''}" onchange="updatePaymentField(${idx}, 'cheque', this.value)" style="padding: 5px; font-size: 11px; width: 100px;" required />
+                <input type="date" value="${p.depositDate || ''}" onchange="updatePaymentField(${idx}, 'depositDate', this.value)" style="padding: 5px; font-size: 11px; width: 120px;" required />
+              </div>
+            ` : '—'}
+          </td>
+          <td>
+            <select onchange="updatePaymentField(${idx}, 'status', this.value); calcSalesModalTotals();" style="padding: 6px; font-size: 12px; width: 120px; color: ${p.status === 'Cashed' ? 'var(--green)' : 'var(--yellow)'}; font-weight: bold; background: var(--surface);" required>
+              <option value="Cashed" ${p.status === 'Cashed' ? 'selected' : ''}>✔ Cashed</option>
+              <option value="To be Collected" ${p.status === 'To be Collected' ? 'selected' : ''}>◑ Pending</option>
+            </select>
+          </td>
+          <td>
+            <button type="button" class="btn btn-danger btn-sm" onclick="removePaymentRow(${idx})" style="padding: 4px 8px; font-size: 11px;">✕</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function addPaymentRow() {
+    currentBillPayments.push({
+      date: todayStr(),
+      amount: 0,
+      mode: 'Cash',
+      status: 'Cashed'
+    });
+    renderModalPayments();
+    calcSalesModalTotals();
+  }
+
+  function removePaymentRow(idx) {
+    currentBillPayments.splice(idx, 1);
+    renderModalPayments();
+    calcSalesModalTotals();
+  }
+
+  function updatePaymentField(idx, field, val) {
+    currentBillPayments[idx][field] = val;
+    if (field === 'mode') {
+      if (val === 'Cheque') {
+        currentBillPayments[idx].cheque = '';
+        currentBillPayments[idx].depositDate = todayStr();
+        currentBillPayments[idx].status = 'To be Collected';
+      } else {
+        delete currentBillPayments[idx].cheque;
+        delete currentBillPayments[idx].depositDate;
+        currentBillPayments[idx].status = 'Cashed';
+      }
+    }
+  }
+
+  function calcSalesModalTotals() {
+    const total = parseFloat(document.getElementById('s-total').value) || 0;
+    let cashedSum = 0;
+    
+    currentBillPayments.forEach(p => {
+      if (p.status === 'Cashed') {
+        cashedSum += parseFloat(p.amount) || 0;
+      }
+    });
+    
+    const outstanding = Math.max(0, total - cashedSum);
+    document.getElementById('outstanding-display').textContent = fmt(outstanding);
+  }
+
+  // ── Purchase ──
+  function renderPurchase() {
+    const search  = document.getElementById('purchase-search').value.toLowerCase();
+    const factory = document.getElementById('f-purchase-factory').value;
+
+    const filtered = purchaseBills
+      .filter(b =>
+        (!search  || b.billno.toLowerCase().includes(search) || b.factory.toLowerCase().includes(search)) &&
+        (!factory || b.factory === factory)
+      )
+      .sort((a, b) => b.date.localeCompare(a.date));
+
+    const tbody = document.getElementById('purchase-tbody');
+    const empty = document.getElementById('purchase-empty');
+
+    if (!filtered.length) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    tbody.innerHTML = filtered.map(b => {
+      const pdf = b.photo ? `<a href="javascript:void(0)" onclick="viewBillPdf('${escapeHtml(b.photo)}', 'Purchase Bill ${escapeHtml(b.billno)} PDF')" class="drive-link">📄 View PDF</a>` : '—';
+      return `<tr>
+        <td style="font-weight:600;">${escapeHtml(b.billno)}</td>
+        <td><span style="font-size:12px;background:var(--accent-glow);border:1px solid var(--border);border-radius:20px;padding:3px 10px;color:var(--accent2);">${escapeHtml(b.factory)}</span></td>
+        <td>${fmtD(b.date)}</td>
+        <td style="font-weight:600;">${fmt(b.amount)}</td>
+        <td>${pdf}</td>
+        <td style="color:var(--text-muted);font-size:12px;">${escapeHtml(b.notes || '—')}</td>
+        <td style="white-space:nowrap;">
+          <button class="btn btn-ghost btn-sm" onclick="editPurchase('${b.id}')">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deletePurchase('${b.id}')">🗑️</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function openPurchaseModal(id) {
+    refreshFactoryDropdown('p-factory');
+    const previewContainer = document.getElementById('p-pdf-preview-container');
+    const previewLink = document.getElementById('p-pdf-preview-link');
+    const uploadStatus = document.getElementById('p-upload-status');
+    const fileInput = document.getElementById('p-photo-file');
+    
+    fileInput.value = '';
+    
+    if (id) {
+      const b = purchaseBills.find(x => x.id === id);
+      if (!b) return;
+      document.getElementById('purchase-modal-title').textContent = 'Edit Purchase Bill';
+      document.getElementById('p-id').value      = b.id;
+      document.getElementById('p-billno').value  = b.billno;
+      document.getElementById('p-date').value    = b.date.substring(0, 10);
+      document.getElementById('p-factory').value = b.factory;
+      document.getElementById('p-amount').value  = b.amount;
+      document.getElementById('p-photo').value   = b.photo || '';
+      document.getElementById('p-notes').value   = b.notes || '';
+      
+      if (b.photo) {
+        uploadStatus.textContent = "Saved PDF loaded";
+        uploadStatus.style.color = "var(--green)";
+        previewLink.onclick = () => viewBillPdf(b.photo, `Purchase Bill ${b.billno} PDF`);
+        previewContainer.style.display = "block";
+      } else {
+        uploadStatus.textContent = "No file selected";
+        uploadStatus.style.color = "var(--text-muted)";
+        previewContainer.style.display = "none";
+      }
+    } else {
+      document.getElementById('purchase-modal-title').textContent = 'Add Purchase Bill';
+      document.getElementById('purchase-form').reset();
+      document.getElementById('p-id').value   = '';
+      document.getElementById('p-date').value = todayStr();
+      document.getElementById('p-photo').value = '';
+      
+      uploadStatus.textContent = "No file selected";
+      uploadStatus.style.color = "var(--text-muted)";
+      previewContainer.style.display = "none";
+    }
+    document.getElementById('modal-purchase').classList.add('open');
+  }
+
+  function closePurchaseModal() {
+    document.getElementById('modal-purchase').classList.remove('open');
+    document.getElementById('purchase-form').reset();
+    document.getElementById('p-id').value = '';
+  }
+
+  function editPurchase(id) { openPurchaseModal(id); }
+
+  async function deletePurchase(id) {
+    if (!confirm('Delete this purchase bill?')) return;
+    try {
+      await apiRequest('/api/purchases/' + id, { method: 'DELETE' });
+      showToast('Bill deleted ✓', 'success');
+      await syncData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  async function savePurchaseBill(e) {
+    e.preventDefault();
+    const id = document.getElementById('p-id').value || '';
+    const bill = {
+      id,
+      billno:  document.getElementById('p-billno').value.trim(),
+      date:    document.getElementById('p-date').value,
+      factory: document.getElementById('p-factory').value,
+      amount:  parseFloat(document.getElementById('p-amount').value) || 0,
+      photo:   document.getElementById('p-photo').value.trim(),
+      notes:   document.getElementById('p-notes').value.trim(),
+    };
+
+    try {
+      await apiRequest('/api/purchases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bill)
+      });
+      closePurchaseModal();
+      showToast('Purchase bill saved ✓', 'success');
+      await syncData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  // ── Areas ──
+  function refreshAreaDropdown(targetId) {
+    const targets = targetId ? [targetId] : ['s-area', 'f-sales-area'];
+    targets.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const curr = el.value;
+      const isFilter = id.startsWith('f-');
+      el.innerHTML = isFilter ? '<option value="">All Areas</option>' : '<option value="">Select area...</option>';
+      areas.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = opt.textContent = a;
+        el.appendChild(opt);
+      });
+      el.value = curr;
+    });
+  }
+
+  async function addArea() {
+    const input = document.getElementById('newAreaInput');
+    const val   = input.value.trim();
+    if (!val) { showToast('Please enter an area name', 'error'); return; }
+    if (areas.includes(val)) { showToast('Area already exists', 'error'); return; }
+    
+    try {
+      await apiRequest('/api/areas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: val })
+      });
+      input.value = '';
+      showToast(`Area "${val}" added ✓`, 'success');
+      await syncData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  async function removeArea(a) {
+    if (!confirm(`Remove area "${a}"?`)) return;
+    try {
+      await apiRequest('/api/areas/' + encodeURIComponent(a), { method: 'DELETE' });
+      showToast(`Area "${a}" removed ✓`, 'success');
+      await syncData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  // ── Factories ──
+  function refreshFactoryDropdown(targetId) {
+    const targets = targetId ? [targetId] : ['p-factory', 'f-purchase-factory'];
+    targets.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const curr = el.value;
+      const isFilter = id.startsWith('f-');
+      el.innerHTML = isFilter ? '<option value="">All Factories</option>' : '<option value="">Select factory...</option>';
+      factories.forEach(f => {
+        const opt = document.createElement('option');
+        opt.value = opt.textContent = f;
+        el.appendChild(opt);
+      });
+      el.value = curr;
+    });
+  }
+
+  async function addFactory() {
+    const input = document.getElementById('newFactoryInput');
+    const val   = input.value.trim();
+    if (!val) { showToast('Please enter a factory name', 'error'); return; }
+    if (factories.includes(val)) { showToast('Factory already exists', 'error'); return; }
+    
+    try {
+      await apiRequest('/api/factories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: val })
+      });
+      input.value = '';
+      showToast(`Factory "${val}" added ✓`, 'success');
+      await syncData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  async function removeFactory(f) {
+    if (!confirm(`Remove factory "${f}"?`)) return;
+    try {
+      await apiRequest('/api/factories/' + encodeURIComponent(f), { method: 'DELETE' });
+      showToast(`Factory "${f}" removed ✓`, 'success');
+      await syncData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  function renderSettings() {
+    document.getElementById('area-chips').innerHTML = areas.map(a =>
+      `<div class="chip">${escapeHtml(a)} <span class="chip-remove" onclick="removeArea('${escapeAttr(a)}')">✕</span></div>`
+    ).join('') || '<span style="font-size:13px;color:var(--text-dim);">No areas added yet.</span>';
+
+    document.getElementById('factory-chips').innerHTML = factories.map(f =>
+      `<div class="chip">${escapeHtml(f)} <span class="chip-remove" onclick="removeFactory('${escapeAttr(f)}')">✕</span></div>`
+    ).join('') || '<span style="font-size:13px;color:var(--text-dim);">No factories added yet.</span>';
+  }
+
+  // ── Export / Import ──
+  function exportCSV(type) {
+    let headers, rows, filename;
+    if (type === 'sales') {
+      headers  = ['Bill No','Shop','Area','Date','Total (LKR)','Paid (LKR)','Outstanding (LKR)','Status','Payment Plan Info','Notes'];
+      rows     = salesBills.map(b => {
+        const paymentsList = getPayments(b);
+        const payInfo = paymentsList.map(p => `${p.date}:${p.amount}(${p.mode}-${p.status})`).join(';');
+        return [
+          b.billno, b.shop, b.area, b.date, b.total, b.paid||0,
+          Math.max(0,(b.total||0)-(b.paid||0)), b.status, payInfo, b.notes||''
+        ];
+      });
+      filename = 'sales-bills.csv';
+    } else {
+      headers  = ['Bill No','Factory','Date','Amount (LKR)','Notes'];
+      rows     = purchaseBills.map(b => [b.billno, b.factory, b.date, b.amount, b.notes||'']);
+      filename = 'purchase-bills.csv';
+    }
+    const csv = [headers, ...rows]
+      .map(r => r.map(c => `"${String(c||'').replace(/"/g,'""')}"`).join(','))
+      .join('\n');
+    download(csv, filename, 'text/csv');
+    showToast('CSV exported ✓', 'success');
+  }
+
+  function exportAllJSON() {
+    const data = { salesBills, purchaseBills, areas, factories, exportedAt: new Date().toISOString() };
+    download(JSON.stringify(data, null, 2), 'billtrack-backup.json', 'application/json');
+    showToast('Backup exported ✓', 'success');
+  }
+
+  async function handleImport(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (!confirm('This will upload and merge this backup with your current local database. Continue?')) return;
+        
+        showToast('Importing backup data...', 'success');
+        
+        if (data.areas && Array.isArray(data.areas)) {
+          for (const a of data.areas) {
+            await apiRequest('/api/areas', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: a })
+            });
+          }
+        }
+        
+        if (data.factories && Array.isArray(data.factories)) {
+          for (const f of data.factories) {
+            await apiRequest('/api/factories', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: f })
+            });
+          }
+        }
+        
+        if (data.salesBills && Array.isArray(data.salesBills)) {
+          for (const b of data.salesBills) {
+            const cleanBill = {
+              id: b.id || '',
+              billno: b.billno || '',
+              date: b.date || '',
+              shop: b.shop || '',
+              area: b.area || '',
+              total: parseFloat(b.total) || 0,
+              paid: parseFloat(b.paid) || 0,
+              status: b.status || 'Unpaid',
+              photo: b.photo || '',
+              notes: b.notes || '',
+              payments: b.payments || []
+            };
+            await apiRequest('/api/sales', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(cleanBill)
+            });
+          }
+        }
+        
+        if (data.purchaseBills && Array.isArray(data.purchaseBills)) {
+          for (const b of data.purchaseBills) {
+            const cleanBill = {
+              id: b.id || '',
+              billno: b.billno || '',
+              date: b.date || '',
+              factory: b.factory || '',
+              amount: parseFloat(b.amount) || 0,
+              photo: b.photo || '',
+              notes: b.notes || '',
+            };
+            await apiRequest('/api/purchases', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(cleanBill)
+            });
+          }
+        }
+        
+        showToast('Backup restored successfully! ✓', 'success');
+        await syncData();
+      } catch (err) {
+        console.error(err);
+        showToast('Invalid backup file structure or network error', 'error');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+
+  async function clearAllData() {
+    if (!confirm('⚠️ This will permanently delete ALL bills, areas, and factories from your database. Are you sure?')) return;
+    if (!confirm('Final warning — this cannot be undone. Proceed?')) return;
+    
+    showToast('Clearing database...', 'success');
+    try {
+      for (const b of salesBills) {
+        await apiRequest('/api/sales/' + b.id, { method: 'DELETE' });
+      }
+      for (const b of purchaseBills) {
+        await apiRequest('/api/purchases/' + b.id, { method: 'DELETE' });
+      }
+      for (const a of areas) {
+        await apiRequest('/api/areas/' + encodeURIComponent(a), { method: 'DELETE' });
+      }
+      for (const f of factories) {
+        await apiRequest('/api/factories/' + encodeURIComponent(f), { method: 'DELETE' });
+      }
+      
+      showToast('Database cleared ✓', 'success');
+      await syncData();
+    } catch (err) {
+      console.error(err);
+      showToast('Error clearing database', 'error');
+    }
+  }
+
+  function download(content, filename, type) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([content], {type}));
+    a.download = filename; a.click();
+  }
+
+  // ── Toast ──
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    if (!t) return;
+    t.textContent = (type === 'success' ? '✓ ' : '✕ ') + msg;
+    t.className   = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // ── Robust Payments Parsing ──
+  function getPayments(b) {
+    if (!b || !b.payments) return [];
+    if (typeof b.payments === 'string') {
+      try {
+        return JSON.parse(b.payments);
+      } catch (e) {
+        console.error("Error parsing payments JSON", e, b.payments);
+        return [];
+      }
+    }
+    if (Array.isArray(b.payments)) return b.payments;
+    return [];
+  }
+
+  // ── Helpers ──
+  function todayStr() { return new Date().toISOString().split('T')[0]; }
+  
+  function escapeHtml(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  
+  function escapeAttr(s) { return String(s||'').replace(/'/g,"\\'"); }
+
+  // ── Data sync polling loop ──
+  let isSyncing = false;
+  async function syncData() {
+    if (!token || isSyncing) return;
+    isSyncing = true;
+    try {
+      const [salesList, purchasesList, areasList, factoriesList] = await Promise.all([
+        apiRequest('/api/sales'),
+        apiRequest('/api/purchases'),
+        apiRequest('/api/areas'),
+        apiRequest('/api/factories')
+      ]);
+      
+      salesBills = salesList;
+      purchaseBills = purchasesList;
+      areas = areasList;
+      factories = factoriesList;
+      
+      refreshAreaDropdown();
+      refreshFactoryDropdown();
+      
+      if (document.getElementById('page-dashboard').classList.contains('active')) {
+        renderDashboard();
+        renderCalendar();
+      }
+      if (document.getElementById('page-sales').classList.contains('active')) {
+        renderSales();
+      }
+      if (document.getElementById('page-purchase').classList.contains('active')) {
+        renderPurchase();
+      }
+      if (document.getElementById('page-settings').classList.contains('active')) {
+        renderSettings();
+      }
+    } catch (err) {
+      console.error("Sync error:", err);
+    } finally {
+      isSyncing = false;
+    }
+  }
+
+  // ── Authentication Checks & Flow ──
+  async function checkAuthStatus() {
+    try {
+      const status = await apiRequest('/api/auth/status').catch(() => null);
+      if (!status) {
+        showToast("Cannot connect to local server", "error");
+        return;
+      }
+      
+      if (status.setupRequired) {
+        document.getElementById('setup-form-area').style.display = 'block';
+        document.getElementById('login-form-area').style.display = 'none';
+        document.getElementById('auth-view').style.display = 'flex';
+        document.getElementById('app-view').style.display = 'none';
+      } else if (status.loggedIn) {
+        document.getElementById('auth-view').style.display = 'none';
+        document.getElementById('app-view').style.display = 'block';
+        document.getElementById('user-profile-name').textContent = status.username;
+        
+        await syncData();
+        navigate('dashboard');
+      } else {
+        document.getElementById('setup-form-area').style.display = 'none';
+        document.getElementById('login-form-area').style.display = 'block';
+        document.getElementById('auth-view').style.display = 'flex';
+        document.getElementById('app-view').style.display = 'none';
+      }
+    } catch (err) {
+      console.error("Auth check failed:", err);
+      document.getElementById('setup-form-area').style.display = 'none';
+      document.getElementById('login-form-area').style.display = 'block';
+      document.getElementById('auth-view').style.display = 'flex';
+      document.getElementById('app-view').style.display = 'none';
+    }
+  }
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('l-username').value.trim();
+    const password = document.getElementById('l-password').value;
+    
+    try {
+      const data = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      
+      if (!data.ok) {
+        const err = await data.json().catch(() => ({}));
+        throw new Error(err.error || "Login failed");
+      }
+      
+      const res = await data.json();
+      token = res.token;
+      currentUsername = res.username;
+      localStorage.setItem('bt_session_token', token);
+      localStorage.setItem('bt_username', currentUsername);
+      showToast("Signed in successfully!", "success");
+      await checkAuthStatus();
+    } catch (err) {
+      showToast(err.message, "error");
+    }
+  }
+
+  async function handleSetup(e) {
+    e.preventDefault();
+    const username = document.getElementById('s-username').value.trim();
+    const password = document.getElementById('s-password').value;
+    const confirmPwd = document.getElementById('s-confirm-password').value;
+    
+    if (password.length < 6) {
+      showToast("Password must be at least 6 characters long", "error");
+      return;
+    }
+    if (password !== confirmPwd) {
+      showToast("Passwords do not match", "error");
+      return;
+    }
+    
+    try {
+      const data = await fetch('/api/auth/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      
+      if (!data.ok) {
+        const err = await data.json().catch(() => ({}));
+        throw new Error(err.error || "Setup failed");
+      }
+      
+      showToast("Admin account created! Signing in...", "success");
+      
+      // Automatically log in
+      const loginData = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const res = await loginData.json();
+      token = res.token;
+      currentUsername = res.username;
+      localStorage.setItem('bt_session_token', token);
+      localStorage.setItem('bt_username', currentUsername);
+      await checkAuthStatus();
+    } catch (err) {
+      showToast(err.message, "error");
+    }
+  }
+
+  async function handleChangePassword(e) {
+    e.preventDefault();
+    const currentPassword = document.getElementById('cp-current').value;
+    const newPassword = document.getElementById('cp-new').value;
+    const confirmPassword = document.getElementById('cp-confirm').value;
+
+    if (newPassword.length < 6) {
+      showToast("New password must be at least 6 characters long", "error");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showToast("New passwords do not match", "error");
+      return;
+    }
+
+    try {
+      const res = await apiRequest('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+      showToast(res.message || "Password updated successfully!", "success");
+      document.getElementById('change-pwd-form').reset();
+    } catch (err) {
+      showToast(err.message, "error");
+    }
+  }
+
+  function logout() {
+    token = '';
+    currentUsername = '';
+    localStorage.removeItem('bt_session_token');
+    localStorage.removeItem('bt_username');
+    document.getElementById('auth-view').style.display = 'flex';
+    document.getElementById('app-view').style.display = 'none';
+    document.getElementById('login-form-area').style.display = 'block';
+    document.getElementById('setup-form-area').style.display = 'none';
+    showToast("Logged out successfully ✓", "success");
+  }
+
+  // ── Overlay Modal Click Bindings ──
+  ['modal-sales','modal-purchase','modal-pdf-viewer','modal-cheque-detail'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('click', function(e) {
+        if (e.target === this) {
+          if (id === 'modal-sales') closeSalesModal();
+          else if (id === 'modal-purchase') closePurchaseModal();
+          else if (id === 'modal-pdf-viewer') closePdfViewerModal();
+          else if (id === 'modal-cheque-detail') closeChequeDetailModal();
+        }
+      });
+    }
+  });
+
+  // ── Bind functions to window explicitly ──
+  window.showToast = showToast;
+  window.getPayments = getPayments;
+  window.navigate = navigate;
+  window.toggleSidebar = toggleSidebar;
+  window.exportCSV = exportCSV;
+  window.exportAllJSON = exportAllJSON;
+  window.handleImport = handleImport;
+  window.clearAllData = clearAllData;
+  
+  window.openSalesModal = openSalesModal;
+  window.closeSalesModal = closeSalesModal;
+  window.editSales = editSales;
+  window.deleteSales = deleteSales;
+  window.saveSalesBill = saveSalesBill;
+  window.uploadBillPdf = uploadBillPdf;
+  window.viewBillPdf = viewBillPdf;
+  window.closePdfViewerModal = closePdfViewerModal;
+  
+  window.addPaymentRow = addPaymentRow;
+  window.removePaymentRow = removePaymentRow;
+  window.updatePaymentField = updatePaymentField;
+  window.calcSalesModalTotals = calcSalesModalTotals;
+  
+  window.prevCalendarMonth = prevCalendarMonth;
+  window.nextCalendarMonth = nextCalendarMonth;
+  window.closeChequeDetailModal = closeChequeDetailModal;
+  window.toggleCalendarChequeStatus = toggleCalendarChequeStatus;
+  
+  window.openPurchaseModal = openPurchaseModal;
+  window.closePurchaseModal = closePurchaseModal;
+  window.editPurchase = editPurchase;
+  window.deletePurchase = deletePurchase;
+  window.savePurchaseBill = savePurchaseBill;
+  window.addArea = addArea;
+  window.removeArea = removeArea;
+  window.addFactory = addFactory;
+  window.removeFactory = removeFactory;
+  
+  window.handleLogin = handleLogin;
+  window.handleSetup = handleSetup;
+  window.handleChangePassword = handleChangePassword;
+  window.logout = logout;
+
+  // ── Init ──
+  checkAuthStatus();
+  setInterval(syncData, 5000);
+</script>
+</body>
+</html>
